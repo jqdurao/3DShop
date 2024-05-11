@@ -38,7 +38,7 @@ dependencies {
     // TensorFlow Lite
     implementation("org.tensorflow:tensorflow-lite:2.7.0")
     // OpenCV
-    implementation("org.bytedeco:opencv-platform:4.5.2-1.5.6")
+    //implementation("org.bytedeco:opencv-platform:4.5.2-1.5.6")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)

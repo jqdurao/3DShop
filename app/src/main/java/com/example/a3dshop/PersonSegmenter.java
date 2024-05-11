@@ -10,13 +10,6 @@ import java.nio.channels.FileChannel;
 public class PersonSegmenter {
     private Interpreter tflite;
 
-    public PersonSegmenter(String modelPath) {
-        try {
-            tflite = new Interpreter(loadModelFile(modelPath));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public Bitmap segmentPerson(Bitmap bitmap) {
         // Preprocess the image: resize, normalize, etc.
