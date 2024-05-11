@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.widget.Toast;
 import android.net.Uri;
 import android.widget.Button;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ImageCapture imageCapture = null;
     private PreviewView previewView;
+    private PersonSegmenter personSegmenter;
 
     private File outputDirectory;
 
@@ -45,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
 
         File appDirectory = getFilesDir();
         outputDirectory = new File(appDirectory, "images");
+
+        // Initialize the PersonSegmenter with the path of your model
+        personSegmenter = new PersonSegmenter("my_model.tflite");
 
         Button captureButton = findViewById(R.id.capture_button);
         captureButton.setOnClickListener(v -> {
@@ -63,6 +70,16 @@ public class MainActivity extends AppCompatActivity {
                     Uri savedUri = Uri.fromFile(photoFile);
                     String msg = "Photo capture succeeded: " + savedUri;
                     Toast.makeText(getBaseContext(), msg,Toast.LENGTH_SHORT).show();
+
+                    // Load the image
+                    Bitmap bitmap = BitmapFactory.decodeFile(photoFile.getAbsolutePath());
+
+                    // Segment the person
+                    Bitmap segmentedBitmap = personSegmenter.segmentPerson(bitmap);
+
+                    // Display the segmented image
+                    ImageView imageView = findViewById(R.id.captured_image);
+                    imageView.setImageBitmap(segmentedBitmap);
                 }
 
                 @Override
@@ -75,60 +92,5 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (allPermissionsGranted()) {
-            startCamera();
-        } else {
-            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
-        }
-    }
-
-    private void startCamera() {
-        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-
-        cameraProviderFuture.addListener(() -> {
-            try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-                bindPreview(cameraProvider);
-            } catch (ExecutionException | InterruptedException e) {
-                System.out.println("Error: " + e);
-            }
-        }, ContextCompat.getMainExecutor(this));
-    }
-
-    private void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
-        Preview preview = new Preview.Builder().build();
-        CameraSelector cameraSelector = new CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build();
-        imageCapture = new ImageCapture.Builder().build();
-
-        preview.setSurfaceProvider(previewView.getSurfaceProvider());
-
-        cameraProvider.unbindAll();
-        cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture);
-    }
-
-    private boolean allPermissionsGranted() {
-        for (String permission : REQUIRED_PERMISSIONS) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (allPermissionsGranted()) {
-                startCamera();
-            } else {
-                Toast.makeText(this, "Permissions not granted by the user. App needs these permissions to function.", Toast.LENGTH_LONG).show();
-                finish();
-            }
-        }
-    }
+    // ... rest of your code ...
 }

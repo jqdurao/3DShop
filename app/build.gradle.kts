@@ -35,6 +35,10 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.1.0-alpha05")
     // CameraX View class
     implementation("androidx.camera:camera-view:1.0.0-alpha28")
+    // TensorFlow Lite
+    implementation("org.tensorflow:tensorflow-lite:2.7.0")
+    // OpenCV
+    implementation("org.bytedeco:opencv-platform:4.5.2-1.5.6")
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
