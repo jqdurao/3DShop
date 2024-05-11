@@ -2,7 +2,10 @@ package com.example.a3dshop;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.widget.ImageView;
 import android.widget.Toast;
 import android.net.Uri;
 import android.widget.Button;
@@ -46,6 +49,13 @@ public class MainActivity extends AppCompatActivity {
 
         previewView = findViewById(R.id.previewView);
 
+        if (allPermissionsGranted()) {
+            startCamera();
+        } else {
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+            System.out.println("Requesting permissions");
+        }
+
         Button captureButton = findViewById(R.id.capture_button);
         captureButton.setOnClickListener(v -> {
 
@@ -72,6 +82,25 @@ public class MainActivity extends AppCompatActivity {
                     String msg = "Photo capture succeeded: " + savedUri;
                     Toast.makeText(getBaseContext(), msg,Toast.LENGTH_SHORT).show();
                     System.out.println(msg);
+
+                    Bitmap bitmap = BitmapFactory.decodeFile(savedUri.toString());
+
+                    // Use the PersonSegmenter to segment the person in the image
+                    try{
+                        personSegmenter = new PersonSegmenter(getAssets());
+                    } catch(Exception e) {
+                        System.out.println(e);
+                    }
+
+                    personSegmenter.segmentPerson(bitmap);
+
+                    //Bitmap segmentedBitmap = personSegmenter.segmentPerson(bitmap);
+
+                    // Display the segmented image
+                    //ImageView segmentedImageView = findViewById(R.id.segmentedImageView);
+                    //segmentedImageView.setImageBitmap(segmentedBitmap);
+
+                    // ... other code ...
                 }
 
                 @Override
@@ -82,14 +111,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
-        if (allPermissionsGranted()) {
-            startCamera();
-        } else {
-            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
-            System.out.println("Requesting permissions");
-        }
-
-
     }
 
     private void startCamera() {
