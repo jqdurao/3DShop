@@ -83,7 +83,11 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(getBaseContext(), msg,Toast.LENGTH_SHORT).show();
                     System.out.println(msg);
 
-                    Bitmap bitmap = BitmapFactory.decodeFile(savedUri.toString());
+                    String imagePath = savedUri.getPath();
+
+                    System.out.println("The path that of the image is: " + imagePath);
+
+                    Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
 
                     // Use the PersonSegmenter to segment the person in the image
                     try{
