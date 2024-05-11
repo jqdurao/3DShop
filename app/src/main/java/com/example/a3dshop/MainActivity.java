@@ -20,6 +20,7 @@ import androidx.camera.view.PreviewView;
 import androidx.camera.core.ImageCapture;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_PERMISSIONS = 2;
     private static final String[] REQUIRED_PERMISSIONS = new String[]{Manifest.permission.CAMERA};
 
+    private PersonSegmenter personSegmenter;
     private ImageCapture imageCapture = null;
     private PreviewView previewView;
 
@@ -86,20 +88,9 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
             System.out.println("Requesting permissions");
         }
-    }
-/*
-    @Override
-    protected void onResume() {
-        super.onResume();
 
-        if (allPermissionsGranted()) {
-            startCamera();
-        } else {
-            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
-        }
-    }
 
- */
+    }
 
     private void startCamera() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
