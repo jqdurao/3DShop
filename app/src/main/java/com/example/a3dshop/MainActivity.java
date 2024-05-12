@@ -2,7 +2,11 @@ package com.example.a3dshop;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Environment;
+import android.widget.ImageView;
 import android.widget.Toast;
 import android.net.Uri;
 import android.widget.Button;
@@ -20,7 +24,10 @@ import androidx.camera.view.PreviewView;
 import androidx.camera.core.ImageCapture;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
@@ -46,13 +53,23 @@ public class MainActivity extends AppCompatActivity {
 
         previewView = findViewById(R.id.previewView);
 
+        if (allPermissionsGranted()) {
+            startCamera();
+        } else {
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+            System.out.println("Requesting permissions");
+        }
+
         Button captureButton = findViewById(R.id.capture_button);
         captureButton.setOnClickListener(v -> {
 
             System.out.println("Capture button clicked");
 
             ContentValues contentValues = new ContentValues();
-            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(System.currentTimeMillis()) + ".jpg");
+
+            String name = "test.jpg";
+
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
             contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/images"); // Save to Pictures/images folder
 
             ImageCapture.OutputFileOptions outputFileOptions =
@@ -72,6 +89,40 @@ public class MainActivity extends AppCompatActivity {
                     String msg = "Photo capture succeeded: " + savedUri;
                     Toast.makeText(getBaseContext(), msg,Toast.LENGTH_SHORT).show();
                     System.out.println(msg);
+                    try {
+                        InputStream inputStream = getContentResolver().openInputStream(savedUri);
+                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                        // Use the PersonSegmenter to segment the person in the image
+                        personSegmenter = new PersonSegmenter(getAssets());
+                        Bitmap segmentedBitmap = personSegmenter.segmentPerson(bitmap);
+                        System.out.println("Bitmap");
+
+                        // Save the segmented image to the Pictures directory
+                        String filename = "segmented.jpg";
+                        ContentValues contentValues = new ContentValues();
+                        contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+                        contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
+                        contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
+
+                        Uri imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+                        if (imageUri != null) {
+                            OutputStream outputStream = getContentResolver().openOutputStream(imageUri);
+                            if (outputStream != null) {
+                                segmentedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                                outputStream.flush();
+                                outputStream.close();
+                            }
+                        }
+
+
+
+                        Toast.makeText(getBaseContext(), "Image no bg saved",Toast.LENGTH_SHORT).show();
+
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
 
                 @Override
@@ -82,14 +133,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
-        if (allPermissionsGranted()) {
-            startCamera();
-        } else {
-            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
-            System.out.println("Requesting permissions");
-        }
-
-
     }
 
     private void startCamera() {
