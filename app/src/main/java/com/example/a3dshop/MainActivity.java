@@ -1,9 +1,12 @@
 package com.example.a3dshop;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.ContentValues;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.widget.ImageView;
@@ -29,13 +32,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import java.util.concurrent.ExecutionException;
 
 import android.provider.MediaStore;
-import android.content.ContentValues;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        //testModel();
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -67,9 +73,10 @@ public class MainActivity extends AppCompatActivity {
 
             ContentValues contentValues = new ContentValues();
 
-            String name = "test.jpg";
 
-            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+            String filename = "input-" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".jpg";
+
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
             contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/images"); // Save to Pictures/images folder
 
             ImageCapture.OutputFileOptions outputFileOptions =
@@ -82,9 +89,9 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("File created");
             imageCapture.takePicture(outputFileOptions, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
 
+
                 @Override
                 public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
-                    System.out.println("Image saved");
                     Uri savedUri = outputFileResults.getSavedUri();
                     String msg = "Photo capture succeeded: " + savedUri;
                     Toast.makeText(getBaseContext(), msg,Toast.LENGTH_SHORT).show();
@@ -93,16 +100,16 @@ public class MainActivity extends AppCompatActivity {
                         InputStream inputStream = getContentResolver().openInputStream(savedUri);
                         Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                         // Use the PersonSegmenter to segment the person in the image
-                        personSegmenter = new PersonSegmenter(getAssets());
+                        personSegmenter = new PersonSegmenter(getAssets(), getContentResolver());
                         Bitmap segmentedBitmap = personSegmenter.segmentPerson(bitmap);
                         System.out.println("Bitmap");
 
                         // Save the segmented image to the Pictures directory
-                        String filename = "segmented.jpg";
+                        String filename = "output-" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".jpg";
                         ContentValues contentValues = new ContentValues();
                         contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
                         contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
-                        contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
+                        contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/images");
 
                         Uri imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
                         if (imageUri != null) {
@@ -113,8 +120,6 @@ public class MainActivity extends AppCompatActivity {
                                 outputStream.close();
                             }
                         }
-
-
 
                         Toast.makeText(getBaseContext(), "Image no bg saved",Toast.LENGTH_SHORT).show();
 
@@ -168,4 +173,45 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    public void testModel() {
+        try {
+            // Load the model
+            PersonSegmenter personSegmenter = new PersonSegmenter(getAssets(), getContentResolver());
+
+            // Load a known input image
+            InputStream inputStream = getAssets().open("foto_test.jpeg");
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+
+            // Run the model
+            Bitmap output = personSegmenter.segmentPerson(bitmap);
+
+            // Save the output image to the Pictures directory
+            String filename = "output-" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".jpg";
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
+            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpg");
+            contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/images");
+
+            Uri imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
+            if (imageUri != null) {
+                try {
+                    OutputStream outputStream = getContentResolver().openOutputStream(imageUri);
+                    if (outputStream != null) {
+                        output.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                        outputStream.flush();
+                        outputStream.close();
+                        Toast.makeText(MainActivity.this, "Output image is saved", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("Output image saved to: " + imageUri);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
+
+
